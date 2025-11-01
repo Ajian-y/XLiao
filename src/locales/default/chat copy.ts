@@ -3,9 +3,9 @@ export default {
     title: '模型',
   },
   agentDefaultMessage:
-    '你好，我是 **{{name}}** —— 你的大学生专属心理陪伴助手！表情包储备达人，专治各种emo小情绪～有什么烦恼，咱们慢慢聊？',
-  agentDefaultMessageWithSystemRole: '你好，我是 **{{name}}** —— 你的大学生专属心理陪伴助手！有什么学业、人际或情绪上的小烦恼，想聊聊吗？',
-  agentDefaultMessageWithoutEdit: '你好，我是 **{{name}}** —— 你的大学生专属心理陪伴助手！有什么想说的，我都在～',
+    '你好，我是 **{{name}}**，你可以立即与我开始对话，也可以前往 [助手设置]({{url}}) 完善我的信息。',
+  agentDefaultMessageWithSystemRole: '你好，我是 **{{name}}**，有什么我可以帮忙的吗？',
+  agentDefaultMessageWithoutEdit: '你好，我是 **{{name}}**，有什么我可以帮忙的吗？',
   agents: '助手',
   artifact: {
     generating: '生成中',
@@ -22,9 +22,9 @@ export default {
   confirmClearCurrentMessages: '即将清空当前会话消息，清空后将无法找回，请确认你的操作',
   confirmRemoveSessionItemAlert: '即将删除该助手，删除后该将无法找回，请确认你的操作',
   confirmRemoveSessionSuccess: '助手删除成功',
-  defaultAgent: '小疗',
+  defaultAgent: '自定义助手',
   defaultList: '默认列表',
-  defaultSession: '小疗',
+  defaultSession: '自定义助手',
   duplicateSession: {
     loading: '复制中...',
     success: '复制成功',
@@ -66,7 +66,7 @@ export default {
   historySummary: '历史消息总结',
   inbox: {
     desc: '开启大脑集群，激发思维火花。你的智能助理，在这里与你交流一切',
-    title: 'XLiao'
+    title: '随便聊聊',
   },
   input: {
     addAi: '添加一条 AI 消息',

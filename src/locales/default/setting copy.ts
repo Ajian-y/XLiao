@@ -348,7 +348,7 @@ export default {
   settingOpening: {
     openingMessage: {
       desc: '打开会话时的开场消息，用来介绍助手的功能',
-      placeholder: '你好，我是小疗 —— 你的大学生专属心理陪伴助手！表情包储备达人，专治各种emo小情绪～有什么烦恼，咱们慢慢聊？',
+      placeholder: '你好，我是自定义助手。你可以立即与我开始对话，也可以前往助手设置完善我的信息。',
       title: '开场消息',
     },
     openingQuestions: {
