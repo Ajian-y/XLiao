@@ -1,5 +1,5 @@
 import { ActionIcon, ActionIconProps, Hotkey } from '@lobehub/ui';
-import { Compass, FolderClosed, MessageSquare, Palette } from 'lucide-react';
+import { Brain, Compass, FolderClosed, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +34,7 @@ const TopActions = memo<TopActionProps>(({ tab, isPinned }) => {
   const isChatActive = tab === SidebarTabKey.Chat && !isPinned;
   const isFilesActive = tab === SidebarTabKey.Files;
   const isDiscoverActive = tab === SidebarTabKey.Discover;
-  const isImageActive = tab === SidebarTabKey.Image;
+  const isMindfulnessActive = tab === SidebarTabKey.Mindfulness;
 
   return (
     <Flexbox gap={8}>
@@ -65,17 +65,15 @@ const TopActions = memo<TopActionProps>(({ tab, isPinned }) => {
           tooltipProps={{ placement: 'right' }}
         />
       </Link>
-      {showAiImage && (
-        <Link aria-label={t('tab.aiImage')} href={'/image'}>
-          <ActionIcon
-            active={isImageActive}
-            icon={Palette}
-            size={ICON_SIZE}
-            title={t('tab.aiImage')}
-            tooltipProps={{ placement: 'right' }}
-          />
-        </Link>
-      )}
+      <Link aria-label={t('tab.mindfulness')} href={'/main/mindfulness'}>
+        <ActionIcon
+          active={isMindfulnessActive}
+          icon={Brain}
+          size={ICON_SIZE}
+          title={t('tab.mindfulness')}
+          tooltipProps={{ placement: 'right' }}
+        />
+      </Link>
     </Flexbox>
   );
 });

@@ -18,7 +18,6 @@ import { useSend } from '../useSend';
 import MessageFromUrl from './MessageFromUrl';
 
 const leftActions: ActionKeys[] = [
-  'model',
   'search',
   'typo',
   'fileUpload',
@@ -26,7 +25,6 @@ const leftActions: ActionKeys[] = [
   'tools',
   '---',
   ['params', 'history', 'stt', 'clear'],
-  'mainToken',
 ];
 
 const rightActions: ActionKeys[] = ['saveTopic'];

@@ -10,7 +10,7 @@ export enum SidebarTabKey {
   Chat = 'chat',
   Discover = 'discover',
   Files = 'files',
-  Image = 'image',
+  Mindfulness = 'mindfulness',
   Me = 'me',
   Setting = 'settings',
 }

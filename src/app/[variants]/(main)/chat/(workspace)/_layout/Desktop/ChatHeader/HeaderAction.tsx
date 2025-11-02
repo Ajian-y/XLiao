@@ -20,15 +20,11 @@ import { settingsSelectors } from '@/store/user/selectors';
 import { HotkeyEnum } from '@/types/hotkey';
 
 import SettingButton from '../../../features/SettingButton';
-import ShareButton from '../../../features/ShareButton';
 
 const HeaderAction = memo<{ className?: string }>(({ className }) => {
   const { t } = useTranslation('chat');
-  const hotkey = useUserStore(settingsSelectors.getHotkeyById(HotkeyEnum.ToggleRightPanel));
-  const [showAgentSettings, wideScreen, toggleConfig, toggleWideScreen] = useGlobalStore((s) => [
-    systemStatusSelectors.showChatSideBar(s),
+  const [wideScreen, toggleWideScreen] = useGlobalStore((s) => [
     systemStatusSelectors.wideScreen(s),
-    s.toggleChatSideBar,
     s.toggleWideScreen,
   ]);
 
@@ -42,17 +38,6 @@ const HeaderAction = memo<{ className?: string }>(({ className }) => {
         size={DESKTOP_HEADER_ICON_SIZE}
         title={t(wideScreen ? 'toggleWideScreen.off' : 'toggleWideScreen.on')}
         tooltipProps={{
-          placement: 'bottom',
-        }}
-      />
-      <ShareButton />
-      <ActionIcon
-        icon={showAgentSettings ? PanelRightClose : PanelRightOpen}
-        onClick={() => toggleConfig()}
-        size={DESKTOP_HEADER_ICON_SIZE}
-        title={t('toggleRightPanel.title', { ns: 'hotkey' })}
-        tooltipProps={{
-          hotkey,
           placement: 'bottom',
         }}
       />

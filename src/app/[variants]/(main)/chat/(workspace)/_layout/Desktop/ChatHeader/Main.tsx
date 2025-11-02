@@ -16,7 +16,6 @@ import { useSessionStore } from '@/store/session';
 import { sessionMetaSelectors, sessionSelectors } from '@/store/session/selectors';
 
 import TogglePanelButton from '../../../../features/TogglePanelButton';
-import Tags from './Tags';
 
 const useStyles = createStyles(({ css }) => ({
   container: css`
@@ -82,10 +81,9 @@ const Main = memo<{ className?: string }>(({ className }) => {
         size={32}
         title={title}
       />
-      <Flexbox align={'center'} className={styles.container} gap={8} horizontal>
+      <div className={styles.container}>
         <div className={styles.title}>{displayTitle}</div>
-        <Tags />
-      </Flexbox>
+      </div>
     </Flexbox>
   );
 });
