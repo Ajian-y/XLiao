@@ -39,6 +39,17 @@ const nextConfig: NextConfig = {
       '@lobehub/icons',
       'gpt-tokenizer',
     ],
+    //new
+    // serverComponentsExternalPackages: [
+    //   '@lobehub/agent-runtime',
+    //   '@lobehub/model-bank',
+    //   '@electric-sql/pglite',
+    //   'better-sqlite3',
+    //   'langchain',
+    //   'openai',
+    //   'anthropic',
+    //   '@aws-sdk/*',
+    // ],
     // oidc provider depend on constructor.name
     // but swc minification will remove the name
     // so we need to disable it
@@ -276,41 +287,41 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
-  webpack(config) {
-    config.experiments = {
-      asyncWebAssembly: true,
-      layers: true,
-    };
+  // webpack(config) {
+  //   config.experiments = {
+  //     asyncWebAssembly: true,
+  //     layers: true,
+  //   };
 
-    // 开启该插件会导致 pglite 的 fs bundler 被改表
-    if (enableReactScan && !isUsePglite) {
-      config.plugins.push(ReactComponentName({}));
-    }
+  //   // 开启该插件会导致 pglite 的 fs bundler 被改表
+  //   if (enableReactScan && !isUsePglite) {
+  //     config.plugins.push(ReactComponentName({}));
+  //   }
 
-    // to fix shikiji compile error
-    // refs: https://github.com/antfu/shikiji/issues/23
-    config.module.rules.push({
-      resolve: {
-        fullySpecified: false,
-      },
-      test: /\.m?js$/,
-      type: 'javascript/auto',
-    });
+  //   // to fix shikiji compile error
+  //   // refs: https://github.com/antfu/shikiji/issues/23
+  //   config.module.rules.push({
+  //     resolve: {
+  //       fullySpecified: false,
+  //     },
+  //     test: /\.m?js$/,
+  //     type: 'javascript/auto',
+  //   });
 
-    // https://github.com/pinojs/pino/issues/688#issuecomment-637763276
-    config.externals.push('pino-pretty');
+  //   // https://github.com/pinojs/pino/issues/688#issuecomment-637763276
+  //   config.externals.push('pino-pretty');
 
-    config.resolve.alias.canvas = false;
+  //   config.resolve.alias.canvas = false;
 
-    // to ignore epub2 compile error
-    // refs: https://github.com/lobehub/lobe-chat/discussions/6769
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      zipfile: false,
-    };
+  //   // to ignore epub2 compile error
+  //   // refs: https://github.com/lobehub/lobe-chat/discussions/6769
+  //   config.resolve.fallback = {
+  //     ...config.resolve.fallback,
+  //     zipfile: false,
+  //   };
 
-    return config;
-  },
+  //   return config;
+  // },
 };
 
 const noWrapper = (config: NextConfig) => config;
@@ -320,10 +331,10 @@ const withBundleAnalyzer = process.env.ANALYZE === 'true' ? analyzer() : noWrapp
 const withPWA =
   isProd && !isDesktop
     ? withSerwistInit({
-        register: false,
-        swDest: 'public/sw.js',
-        swSrc: 'src/app/sw.ts',
-      })
+      register: false,
+      swDest: 'public/sw.js',
+      swSrc: 'src/app/sw.ts',
+    })
     : noWrapper;
 
 export default withBundleAnalyzer(withPWA(nextConfig as NextConfig));

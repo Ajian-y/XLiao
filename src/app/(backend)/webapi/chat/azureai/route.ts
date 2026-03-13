@@ -1,6 +1,2 @@
-import { POST as UniverseRoute } from '../[provider]/route';
+﻿// Auto-disabled by slim-qwen\nexport const POST = async () => {\n  return new Response('Provider disabled by slim-qwen config', { status: 404 });\n};
 
-export const runtime = 'edge';
-
-export const POST = async (req: Request) =>
-  UniverseRoute(req, { params: Promise.resolve({ provider: 'azureai' }) });
