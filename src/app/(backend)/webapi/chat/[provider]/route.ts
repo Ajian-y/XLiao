@@ -13,22 +13,36 @@ import { getTracePayload } from '@/utils/trace';
 
 export const maxDuration = 300;
 
+// ✅ 情绪解析函数
+function parseEmotion(emotionLine: string) {
+  const result: Record<string, number> = {};
+
+  const clean = emotionLine.replace('情绪分析：', '').trim();
+  const parts = clean.split('｜');
+
+  for (const part of parts) {
+    const match = part.match(/(开心|平静|焦虑|难过|愤怒|疲惫)\s*(\d+)%/);
+    if (match) {
+      const [, key, value] = match;
+      result[key] = Number(value);
+    }
+  }
+
+  return result;
+}
+
 export const POST = checkAuth(async (req: Request, { params, jwtPayload, createRuntime }) => {
-  // 👇 强制只用 Qwen（忽略 URL 里的 provider）
   const provider = 'qwen';
-  const model = 'qwen-max'; // 可换为 qwen-plus / qwen-turbo
+  const model = 'qwen-max';
 
   try {
-    // ============ 1. 初始化模型运行时 ============ //
     let modelRuntime: ModelRuntime;
     if (createRuntime) {
       modelRuntime = createRuntime(jwtPayload);
     } else {
-      // 👇 显式传入 model，确保用指定型号
       modelRuntime = await initModelRuntimeWithUserPayload(provider, jwtPayload, model);
     }
 
-    // ============ 2. 读取聊天请求 ============ //
     const data = (await req.json()) as ChatStreamPayload;
     data.model = 'qwen3.5-plus';
 
@@ -42,46 +56,143 @@ export const POST = checkAuth(async (req: Request, { params, jwtPayload, createR
 （换行）
 再用自然聊天语气回复
 
-规则：
-- 第一行必须是“情绪分析：”开头
-- 6个情绪必须都有，整数，总和=100%
-- 第一行前不能有任何内容
-- 不允许省略这一行
-
-回复要求：
-- 先共情（让人感觉被理解）
-- 像朋友聊天，不说教
-- 可以给一点点建议，但要自然带出，不要列点
-
-示例：
-情绪分析：开心5%｜平静10%｜焦虑40%｜难过25%｜愤怒5%｜疲惫15%
-感觉你最近真的被压得有点喘不过气了，对吧…  
-这种状态其实挺让人消耗的，有时候不用逼自己一下子解决所有事情，慢一点也没关系。  
-
-如果用户有自伤倾向：
-同学，我知道你现在真的很难受，这不是你的错。请拨打心理危机热线：400-161-9995，也可以联系身边的人，我会陪着你。
-
 #Input:`;
 
-    // 过滤掉用户传来的 system 消息，强制使用“小疗”设定
     const messagesWithoutSystem = data.messages.filter(msg => msg.role !== 'system');
     data.messages = [
       { role: 'system', content: xiaoLiaoSystemPrompt },
-      ...messagesWithoutSystem
+      ...messagesWithoutSystem,
     ];
 
-    // ============ 3. 调用模型 ============ //
     const tracePayload = getTracePayload(req);
     let traceOptions = {};
     if (tracePayload?.enabled) {
       traceOptions = createTraceOptions(data, { provider, trace: tracePayload });
     }
 
-    return await modelRuntime.chat(data, {
+    const response = await modelRuntime.chat(data, {
       user: jwtPayload.userId,
       ...traceOptions,
       signal: req.signal,
     });
+
+    return new Response(
+      new ReadableStream({
+        async start(controller) {
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          const encoder = new TextEncoder();
+
+          let buffer = '';
+          let fullText = '';
+          let userText = '';
+
+          let emotionLine = '';
+          let isFirstLineDone = false;
+
+          if (!reader) {
+            controller.close();
+            return;
+          }
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value);
+
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop() || '';
+
+            for (const part of parts) {
+              const lines = part.split('\n');
+
+              let event = '';
+              let dataStr = '';
+
+              for (const line of lines) {
+                if (line.startsWith('event:')) {
+                  event = line.replace('event:', '').trim();
+                }
+                if (line.startsWith('data:')) {
+                  dataStr += line.replace('data:', '').trim();
+                }
+              }
+
+              if (event === 'text' && dataStr) {
+                let text = '';
+
+                try {
+                  text = JSON.parse(dataStr);
+                } catch {
+                  text = dataStr;
+                }
+
+                fullText += text;
+
+                // 🎯 处理第一行情绪
+                if (!isFirstLineDone) {
+                  if (text.includes('\n')) {
+                    const [firstLine, rest] = (emotionLine + text).split('\n');
+
+                    emotionLine = firstLine;
+                    isFirstLineDone = true;
+
+                    // ✅ 剩余内容才给用户
+                    if (rest) {
+                      userText += rest;
+
+                      controller.enqueue(
+                        encoder.encode(`event: text\ndata: ${JSON.stringify(rest)}\n\n`)
+                      );
+                    }
+                  } else {
+                    emotionLine += text;
+                  }
+
+                  continue;
+                }
+
+                // ✅ 正常内容
+                userText += text;
+
+                controller.enqueue(
+                  encoder.encode(`event: text\ndata: ${JSON.stringify(text)}\n\n`)
+                );
+              }
+
+              // 透传其他事件
+              if (event !== 'text') {
+                controller.enqueue(encoder.encode(part + '\n\n'));
+              }
+            }
+          }
+
+          // =========================
+          // ✅ 流结束后统一处理（只执行一次）
+          // =========================
+
+          const emotionJson = parseEmotion(emotionLine);
+
+          console.log('🧠 情绪JSON:', emotionJson);
+          console.log('💬 用户内容:', userText);
+
+          // 👉 这里可以存数据库
+          // await saveToDB({
+          //   userId: jwtPayload.userId,
+          //   emotion: emotionJson,
+          //   content: userText,
+          // });
+
+          controller.close();
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/event-stream',
+        },
+      },
+    );
   } catch (e) {
     const {
       errorType = ChatErrorType.InternalServerError,
