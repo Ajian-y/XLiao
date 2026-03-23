@@ -13,6 +13,9 @@ import { getTracePayload } from '@/utils/trace';
 
 export const maxDuration = 300;
 
+// ✅ 防重复请求（全局）
+const recentRequests = new Map<string, number>();
+
 // ✅ 情绪解析函数
 function parseEmotion(emotionLine: string) {
   const result: Record<string, number> = {};
@@ -33,7 +36,7 @@ function parseEmotion(emotionLine: string) {
 
 export const POST = checkAuth(async (req: Request, { params, jwtPayload, createRuntime }) => {
   const provider = 'qwen';
-  const model = 'qwen-max';
+  const model = 'qwen3.5-plus'; // ✅ 统一模型
 
   try {
     let modelRuntime: ModelRuntime;
@@ -44,7 +47,18 @@ export const POST = checkAuth(async (req: Request, { params, jwtPayload, createR
     }
 
     const data = (await req.json()) as ChatStreamPayload;
-    data.model = 'qwen3.5-plus';
+    data.model = model;
+
+    // ✅ 🚫 防重复请求
+    const lastMessage = data.messages?.slice(-1)[0]?.content || '';
+    const key = `${jwtPayload.userId}_${lastMessage}`;
+    const now = Date.now();
+
+    if (recentRequests.has(key) && now - recentRequests.get(key)! < 1500) {
+      console.log('🚫 拦截重复请求:', key);
+      return new Response('duplicate', { status: 200 });
+    }
+    recentRequests.set(key, now);
 
     const xiaoLiaoSystemPrompt = `你是“小疗”，一个温柔的大学生情绪陪伴助手，更像朋友而不是老师。
 
@@ -84,11 +98,11 @@ export const POST = checkAuth(async (req: Request, { params, jwtPayload, createR
           const encoder = new TextEncoder();
 
           let buffer = '';
-          let fullText = '';
           let userText = '';
 
           let emotionLine = '';
           let isFirstLineDone = false;
+          let hasLogged = false;
 
           if (!reader) {
             controller.close();
@@ -128,17 +142,21 @@ export const POST = checkAuth(async (req: Request, { params, jwtPayload, createR
                   text = dataStr;
                 }
 
-                fullText += text;
-
                 // 🎯 处理第一行情绪
                 if (!isFirstLineDone) {
                   if (text.includes('\n')) {
-                    const [firstLine, rest] = (emotionLine + text).split('\n');
+                    const combined = emotionLine + text;
+                    const index = combined.indexOf('\n');
+
+                    const firstLine = combined.slice(0, index);
+                    let rest = combined.slice(index + 1);
 
                     emotionLine = firstLine;
                     isFirstLineDone = true;
 
-                    // ✅ 剩余内容才给用户
+                    // ✅ 去掉开头脏字符（核心修复）
+                    rest = rest.replace(/^[，,\s\n]+/, '');
+
                     if (rest) {
                       userText += rest;
 
@@ -161,28 +179,23 @@ export const POST = checkAuth(async (req: Request, { params, jwtPayload, createR
                 );
               }
 
-              // 透传其他事件
               if (event !== 'text') {
                 controller.enqueue(encoder.encode(part + '\n\n'));
               }
             }
           }
 
-          // =========================
-          // ✅ 流结束后统一处理（只执行一次）
-          // =========================
+          // ✅ 只执行一次
+          if (!hasLogged) {
+            hasLogged = true;
 
-          const emotionJson = parseEmotion(emotionLine);
+            userText = userText.replace(/^[，,\s]+/, '').trim();
 
-          console.log('🧠 情绪JSON:', emotionJson);
-          console.log('💬 用户内容:', userText);
+            const emotionJson = parseEmotion(emotionLine);
 
-          // 👉 这里可以存数据库
-          // await saveToDB({
-          //   userId: jwtPayload.userId,
-          //   emotion: emotionJson,
-          //   content: userText,
-          // });
+            console.log('🧠 情绪JSON:', emotionJson);
+            console.log('💬 用户内容:', userText);
+          }
 
           controller.close();
         },
