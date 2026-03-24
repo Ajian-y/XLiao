@@ -67,7 +67,7 @@ const EmotionDashboardPage = memo(() => {
     emotion: item.dominantEmotion,
   }));
   // 构成分析图数据（Frequency）
-  const ringData = weeklyEmotionData.Frequency.map((item) => ({
+  const ringData = weeklyEmotionData.highFrequency.map((item) => ({
     type: item.type,
     value: item.percent,
   }));
